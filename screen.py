@@ -3,30 +3,42 @@ import random
 import math
 
 GAME = True
-BLOCK = 30
-HEIGHT = BLOCK * 20
+BLOCK = 35
+HEIGHT = BLOCK * 15
 WIDTH = HEIGHT
-FRAMERATE = 200
+FRAMERATE = 150
 
 snakeParts = []
 snakeCoord = []
 foodCoord = []
+endCards = []
 
 numOfLine = math.floor(HEIGHT/BLOCK)
 mid = math.floor(numOfLine/2)
 
 food = 0
 score = 0
+highScore = 0
 
-titleText = "Snake Game"
 facing = "UP"
+path_to_score = "highscore.txt"
 
 window = Tk()
-window.title(titleText)
+window.title("Snake Game")
 
-grid = Canvas(height=HEIGHT, width=WIDTH, bg="black", bd=0)
-grid.pack(side=RIGHT, expand=True, fill="both")
-# For a resizable window add () to grid.pack
+scoreDisplay = Label(window, anchor=W, text="Score: 0",
+                    font=("", 25), bg="black", bd=10, 
+                    highlightcolor="white", 
+                    fg="white", padx=10, pady=10)
+
+grid = Canvas(height=HEIGHT, width=WIDTH, highlightthickness=0, bg="black", bd=0)
+grid.pack(side="bottom")
+scoreDisplay.pack(side="top", fill=X)
+
+def createGrid():
+    for i in range(15):
+        grid.create_line(i*BLOCK, 0, i*BLOCK, HEIGHT, fill="grey20")
+        grid.create_line(0, i*BLOCK, WIDTH, i*BLOCK, fill="grey20")
 
 def createFood():
     global foodCoord
@@ -80,8 +92,8 @@ def scoreUp():
     global score
     score += 1
 
-    titleText = "Snake Game - Score: " + str(score)
-    window.title(titleText)
+    scoreText = "Score: " + str(score)
+    scoreDisplay.config(text=scoreText)
 
 
 def moveSnake():
@@ -100,7 +112,7 @@ def moveSnake():
     createSnake(head)
 
     for coord in head:
-        if coord > 450 or coord < 0:
+        if coord > HEIGHT or coord < 0:
             gameOver()
 
     if GAME:
@@ -109,7 +121,6 @@ def moveSnake():
 
 def turn(event):
     global facing
-    global titleText
 
     if event.char == "w":
         facing = "UP"
@@ -120,13 +131,43 @@ def turn(event):
     elif event.char == "d":
         facing = "RIGHT"
 
+
 def gameOver():
     global GAME
-    pass
+    global score
+    global highScore
+    
+    GAME = False
 
-createSnake([BLOCK*mid, BLOCK*mid, BLOCK*(mid+1), BLOCK*(mid+1)])
-createFood()
+    if score > highScore:
+        endCard = [grid.create_text(HEIGHT/2, HEIGHT/3, fill="white", text="GAME OVER", font=("", 50)),
+             grid.create_text(HEIGHT/2, HEIGHT/3 + 50, fill="white", text=(
+                 "-- NEW HIGH SCORE --"), font=("", 30)),
+             grid.create_text(HEIGHT/2, HEIGHT/3 + 80, fill="white", text="Press ENTER to restart")]
 
-window.bind("<Key>", turn)
-window.after(FRAMERATE, moveSnake())
-window.mainloop()
+        highScore = score
+        scorefile = open(path_to_score, "w+")
+        scorefile.write(str(highScore))
+        scorefile.close()
+
+    else:
+        endCard = [grid.create_text(HEIGHT/2, HEIGHT/3, fill="white", text="GAME OVER", font=("", 50)),
+             grid.create_text(HEIGHT/2, HEIGHT/3 + 50, fill="white", text="Press ENTER to restart")]
+    
+    for item in endCard:
+        endCards.append(item)
+
+
+if __name__ == "__main__":
+
+    scorefile = open(path_to_score)
+    highScore = int(scorefile.read())
+    scorefile.close()
+
+    createGrid()
+    createSnake([BLOCK*mid, BLOCK*mid, BLOCK*(mid+1), BLOCK*(mid+1)])
+    createFood()
+
+    window.bind("<Key>", turn)
+    window.after(FRAMERATE, moveSnake())
+    window.mainloop()
