@@ -17,8 +17,8 @@ numOfLine = math.floor(HEIGHT/BLOCK)
 mid = math.floor(numOfLine/2)
 
 food = 0
-score = 0
-highScore = 0
+score = 1
+highScore = 1
 
 facing = "UP"
 path_to_score = "highscore.txt"
@@ -26,7 +26,7 @@ path_to_score = "highscore.txt"
 window = Tk()
 window.title("Snake Game")
 
-scoreDisplay = Label(window, anchor=W, text="Score: 0",
+scoreDisplay = Label(window, anchor=W, text="Size: 1",
                     font=("", 25), bg="black", bd=10, 
                     highlightcolor="white", 
                     fg="white", padx=10, pady=10)
@@ -92,12 +92,12 @@ def scoreUp():
     global score
     score += 1
 
-    scoreText = "Score: " + str(score)
+    scoreText = "Size: " + str(score)
     scoreDisplay.config(text=scoreText)
 
 
 def moveSnake():
-    head = snakeCoord[len(snakeCoord) - 1]
+    head = snakeCoord[-1]
 
     if head == foodCoord:
         createSnake(head)
@@ -110,6 +110,9 @@ def moveSnake():
 
     head = moveHead(head)
     createSnake(head)
+
+    if head in snakeCoord[:-3]:
+        gameOver()
 
     for coord in head:
         if coord > HEIGHT or coord < 0:
@@ -156,6 +159,11 @@ def gameOver():
     
     for item in endCard:
         endCards.append(item)
+
+    window.bind("<enter>", restart)
+
+def restart():
+    print("HELLO")
 
 
 if __name__ == "__main__":
