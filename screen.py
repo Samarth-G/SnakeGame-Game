@@ -1,6 +1,7 @@
 from tkinter import *
 import random
 import math
+import time
 
 GAME = True
 BLOCK = 35
@@ -21,7 +22,7 @@ score = 1
 highScore = 1
 
 facing = "UP"
-path_to_score = "highscore.txt"
+path_to_score = "/Users/admin/PycharmProjects/FunTime/SnakeGame/highscore.txt"
 
 window = Tk()
 window.title("Snake Game")
@@ -160,11 +161,41 @@ def gameOver():
     for item in endCard:
         endCards.append(item)
 
-    window.bind("<enter>", restart)
+    window.bind("<Return>", restart)
 
-def restart():
-    print("HELLO")
+def restart(event=None):
+    global endCards
+    global score
+    global highScore
+    global snakeCoord
+    global snakeParts
+    global GAME
+    global facing
 
+    score = 1
+    scoreText = "Size: " + str(score)
+    scoreDisplay.config(text=scoreText)
+
+    scorefile = open(path_to_score)
+    highScore = int(scorefile.read())
+    scorefile.close()
+
+    for i in snakeParts:
+        grid.delete(i)
+
+    for i in endCards:
+        grid.delete(i)
+
+    GAME = True
+    facing = "UP"
+    snakeCoord = []
+    snakeParts = []
+    endCards = []
+
+    createSnake([BLOCK*mid, BLOCK*mid, BLOCK*(mid+1), BLOCK*(mid+1)])
+    createFood()
+
+    window.after(FRAMERATE, moveSnake())
 
 if __name__ == "__main__":
 
@@ -178,4 +209,5 @@ if __name__ == "__main__":
 
     window.bind("<Key>", turn)
     window.after(FRAMERATE, moveSnake())
-    window.mainloop()
+
+window.mainloop()
