@@ -42,6 +42,7 @@
 
       this.hero = new SR.Hero(scene);
       this.hud = new SR.HUD(this.world);
+      this.audio = new SR.Audio();
       // Small in-world highlight of where the next web would attach.
       this.anchorMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.85, fog: false }));
       this.anchorMarker.renderOrder = 10;
@@ -109,6 +110,7 @@
       this.web.update(dt, p, this.hero.handWorld);
       this.city.update(this.time);
       this.traffic.update(dt, p, this.camera.position);
+      this.audio.update(dt, this);
       SR.foliageUniforms.uCamPos.value.copy(this.camera.position);
       SR.foliageUniforms.uHeroPos.value.set(p.pos.x, p.pos.y + 0.4, p.pos.z);
       this.debug.update(dt);
@@ -131,6 +133,7 @@
     }
 
     onEvent(e) {
+      this.audio.onEvent(e, this.player);
       if (e.type === 'hardland') this.cam.addShake(0.9);
       else if (e.type === 'roll') this.cam.addShake(0.35);
       else if (e.type === 'land' && e.impact > 12) this.cam.addShake(0.2);
@@ -157,7 +160,7 @@
   const overlay = document.getElementById('overlay');
   document.getElementById('loading').hidden = true;
   document.getElementById('start').hidden = false;
-  overlay.addEventListener('click', () => game.renderer.domElement.requestPointerLock());
+  overlay.addEventListener('click', () => { game.audio.init(); game.renderer.domElement.requestPointerLock(); });
   document.addEventListener('pointerlockchange', () => (overlay.style.display = document.pointerLockElement ? 'none' : 'flex'));
   addEventListener('resize', () => {
     game.camera.aspect = innerWidth / innerHeight; game.camera.updateProjectionMatrix();

@@ -133,3 +133,20 @@ virtual input at a fixed 60 Hz.
 - Allowed world highlight: a small white diamond previews where the next web would
   attach, and a gold ring marks the zip target while aiming. There is no crosshair or
   health bar. The debug overlay (F3) and tuning panel (F4) are off by default.
+
+## Step 8 – Audio
+- All sound is synthesised with Web Audio at runtime, with no files. The audio context
+  starts on the "click to play" gesture.
+- Hero sounds: web thwip (noise burst plus a falling chirp), splat at the anchor
+  (spatial), rope creak whose rate and level follow line tension, release whoosh scaled
+  by speed, a jump puff, soft landing taps, a heavy thud with sub rumble for super-hero
+  landings, a zip whir, a launch whoosh and a suit-swap chime.
+- World: a traffic rumble bed that fades with altitude and ducks under the wind; wind
+  that gets louder and brighter with speed; crowd murmur at Lumen Square and the
+  Fountain Triangle; horns from actual nearby cars; distant sirens (wail or yelp) that
+  drift along the street grid. Positioned sounds use HRTF panners with inverse-distance
+  roll-off, and the listener follows the camera.
+- Measured on the master bus in headless Chromium: standing at street level 0.029 RMS,
+  at 56 m/s 0.069 RMS (wind rising was too subtle at first, so it was boosted), and a
+  hard landing peaks at 0.36 RMS. Nothing clips thanks to the bus compressor. Tone has
+  only been checked by numbers, not by ear.
