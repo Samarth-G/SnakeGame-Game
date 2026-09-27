@@ -15,7 +15,7 @@
       float r = length(d * vec2(uAspect, 1.0));
       // Radial motion blur: stronger toward the edges, none in the centre.
       vec3 col = texture2D(tScene, vUv).rgb;
-      float amt = uBlur * smoothstep(0.12, 0.75, r) * 0.028;
+      float amt = uBlur * smoothstep(0.22, 0.85, r) * 0.013;
       if (amt > 0.0005) {
         float j = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
         vec3 acc = col;

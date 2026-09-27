@@ -40,9 +40,8 @@
       this.web = new SR.WebLine(scene);
       this.debug = new SR.Debug(this);
 
-      this.avatar = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 10), new THREE.MeshStandardMaterial({ color: 0x19c3c9 }));
-      scene.add(this.avatar);
-      this.hand = new THREE.Vector3();
+      this.hero = new SR.Hero(scene);
+      this.flash = 0;
       this.aimMarker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.7, 32), new THREE.MeshBasicMaterial({ color: 0xffd23c, depthTest: false, transparent: true, opacity: 0.9, fog: false }));
       this.aimMarker.renderOrder = 10;
       scene.add(this.aimMarker);
@@ -82,12 +81,15 @@
       this.cam.look(inp, dt);
       const p = this.player;
       p.update(dt, inp, this.cam);
+      if (inp.pressed.suit) { this.hero.switchSuit(); this.flash = 0.35; p.emit('suit'); }
       if (headless) { p.events.length = 0; return; }
       this.time += dt;
       for (const e of p.events) this.onEvent(e);
       p.events.length = 0;
+      this.hero.update(dt, p, this.time);
       this.cam.update(dt, p);
-      this.avatar.position.copy(p.pos);
+      this.hero.root.visible = this.camera.position.distanceTo(p.pos) > 0.55;
+      this.flash = Math.max(0, this.flash - dt * 1.5);
       const q = p.aimTarget;
       this.aimMarker.visible = !!q;
       if (q) {
@@ -95,8 +97,7 @@
         this.aimMarker.quaternion.copy(this.camera.quaternion);
         this.aimMarker.scale.setScalar(0.6 + this.camera.position.distanceTo(this.aimMarker.position) * 0.025);
       }
-      this.hand.copy(p.pos); this.hand.y += 0.8;
-      this.web.update(dt, p, this.hand);
+      this.web.update(dt, p, this.hero.handWorld);
       this.city.update(this.time);
       this.traffic.update(dt, p, this.camera.position);
       SR.foliageUniforms.uCamPos.value.copy(this.camera.position);
@@ -114,7 +115,7 @@
     render() {
       const c = this.cam;
       this.renderer.info.reset();
-      this.post.render(this.scene, this.camera, { blur: c.speedFx, lines: c.speedFx, time: this.time });
+      this.post.render(this.scene, this.camera, { blur: c.speedFx, lines: c.speedFx, time: this.time, flash: this.flash * 0.6, flashColor: SR.Hero.SUITS[this.hero.suitIndex].name === 'Nocturne' ? new THREE.Color(0.6, 0.7, 1.0) : new THREE.Color(1.0, 0.7, 0.45) });
     }
 
     frame(now) {

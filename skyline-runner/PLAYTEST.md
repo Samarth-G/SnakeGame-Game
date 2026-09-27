@@ -101,3 +101,21 @@ virtual input at a fixed 60 Hz.
   cases at lane wrap-around.
 - Cars near the hero are dynamic colliders flagged "vault": running into one rolls you
   over it. Cars also brake for a hero standing in their lane.
+
+## Step 6 – Hero, animation and suit swap
+- The hero is original: an athletic masked figure (1.8 m) built from primitives, with
+  a lathe torso and a textured chest emblem. **Suit A "Ember"** is signal orange with
+  slate accents and a skyline-kite chest emblem. **Suit B "Nocturne"** is gloss black
+  with a large white shard emblem across chest and back. Tab / Y swaps instantly with a
+  shimmer: emissive flash, a rising ring and a tinted screen flash.
+- Every pose is procedural, driven by state and speed: idle breathing, run/sprint cycles
+  (stride and lean scale with speed, banking into turns), jump, fall, glide (limbs spread
+  when falling forward fast), head-down dive with arms swept back, swing (body hangs
+  along the web, legs tuck at the bottom of the arc), release flip, wall run
+  (perpendicular to the facade), vault, zip, perch crouch, roll and the one-knee
+  super-hero landing.
+- The web arm is solved with IK toward the anchor every frame, and the web line leaves
+  from that hand.
+- Screenshots of idle, sprint, swing, spire perch (Nocturne), hard landing and dive all
+  read correctly. At full dive speed the radial blur smeared the whole frame, so its
+  strength is halved again.
