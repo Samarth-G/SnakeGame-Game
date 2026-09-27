@@ -572,7 +572,8 @@
         const dl = Math.hypot(dx, dy, dz);
         const pd = Math.hypot(q.x - this.pos.x, q.y - this.feetY, q.z - this.pos.z);
         if (pd < 3 || pd > T.zipRange) continue;
-        const c = (dx * cam.fwd.x + dy * cam.fwd.y + dz * cam.fwd.z) / dl;
+        const vf = cam.viewDir || cam.fwd;
+        const c = (dx * vf.x + dy * vf.y + dz * vf.z) / dl;
         if (c > cosMax) cands.push({ q, c });
       }
       cands.sort((a, b) => b.c - a.c);

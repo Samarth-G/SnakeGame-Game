@@ -2,25 +2,12 @@
 (function () {
   const S = () => SR.Player.S;
 
-  // Step-2 placeholder: simple orbit camera behind the player.
-  class SimpleCam {
-    constructor(camera) { this.camera = camera; this.yaw = Math.PI; this.pitch = -0.2; this.fwd = new THREE.Vector3(); this.pos = camera.position; }
-    look(inp, dt) {
-      this.yaw -= inp.mouseLook.x + inp.look.x * dt;
-      this.pitch = Math.max(-1.45, Math.min(1.2, this.pitch - inp.mouseLook.y - inp.look.y * dt));
-      this.fwd.set(-Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), -Math.cos(this.yaw) * Math.cos(this.pitch));
-    }
-    update(dt, player) {
-      const T = SR.TUNING;
-      this.camera.position.copy(player.pos).addScaledVector(this.fwd, -T.camDistance).y += T.camHeight;
-      this.camera.lookAt(player.pos.x, player.pos.y + T.camHeight * 0.5, player.pos.z);
-    }
-  }
-
   class Game {
     constructor() {
       const container = document.getElementById('game');
-      const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
+      const renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setSize(innerWidth, innerHeight);
       container.appendChild(renderer.domElement);
@@ -43,13 +30,18 @@
 
       this.input = new SR.Input(renderer.domElement);
       this.player = new SR.Player(this.world);
-      this.cam = new SimpleCam(this.camera);
+      this.cam = new SR.CameraRig(this.camera, this.world);
+      this.post = new SR.Post(renderer);
       this.web = new SR.WebLine(scene);
       this.debug = new SR.Debug(this);
 
       this.avatar = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 1.0, 4, 10), new THREE.MeshStandardMaterial({ color: 0x19c3c9 }));
       scene.add(this.avatar);
       this.hand = new THREE.Vector3();
+      this.aimMarker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.7, 32), new THREE.MeshBasicMaterial({ color: 0xffd23c, depthTest: false, transparent: true, opacity: 0.9, fog: false }));
+      this.aimMarker.renderOrder = 10;
+      scene.add(this.aimMarker);
+      this.time = 0;
 
       this.input.onKey = (code) => {
         if (code === 'F3' || code === 'Backquote') this.debug.toggleOverlay();
@@ -63,6 +55,7 @@
       const st = this.world.layout.supertall.spire;
       this.player.spawnPerched(st.x, st.y1, st.z, 0.35, 0.94);
       this.cam.yaw = Math.PI - 0.36; this.cam.pitch = -0.25;
+      this.cam.snap();
     }
 
     update(dt, headless) {
@@ -70,20 +63,41 @@
       this.cam.look(inp, dt);
       const p = this.player;
       p.update(dt, inp, this.cam);
+      if (headless) { p.events.length = 0; return; }
+      this.time += dt;
+      for (const e of p.events) this.onEvent(e);
       p.events.length = 0;
-      if (headless) return;
       this.cam.update(dt, p);
       this.avatar.position.copy(p.pos);
+      const q = p.aimTarget;
+      this.aimMarker.visible = !!q;
+      if (q) {
+        this.aimMarker.position.set(q.x, q.y + 0.3, q.z);
+        this.aimMarker.quaternion.copy(this.camera.quaternion);
+        this.aimMarker.scale.setScalar(0.6 + this.camera.position.distanceTo(this.aimMarker.position) * 0.025);
+      }
       this.hand.copy(p.pos); this.hand.y += 0.8;
       this.web.update(dt, p, this.hand);
       this.debug.update(dt);
+    }
+
+    onEvent(e) {
+      if (e.type === 'hardland') this.cam.addShake(0.9);
+      else if (e.type === 'roll') this.cam.addShake(0.35);
+      else if (e.type === 'land' && e.impact > 12) this.cam.addShake(0.2);
+      else if (e.type === 'thwip') this.web.addSplat(e.x, e.y, e.z, e.nx, e.ny, e.nz);
+    }
+
+    render() {
+      const c = this.cam;
+      this.post.render(this.scene, this.camera, { blur: c.speedFx, lines: c.speedFx, time: this.time });
     }
 
     frame(now) {
       const dt = Math.min(0.05, (now - (this.last || now)) / 1000);
       this.last = now;
       this.update(dt, false);
-      this.renderer.render(this.scene, this.camera);
+      this.render();
       requestAnimationFrame((t) => this.frame(t));
     }
   }
@@ -98,6 +112,7 @@
   addEventListener('resize', () => {
     game.camera.aspect = innerWidth / innerHeight; game.camera.updateProjectionMatrix();
     game.renderer.setSize(innerWidth, innerHeight);
+    game.post.setSize();
   });
   requestAnimationFrame((t) => game.frame(t));
 })();

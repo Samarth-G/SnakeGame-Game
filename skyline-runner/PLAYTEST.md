@@ -39,3 +39,18 @@ virtual input at a fixed 60 Hz.
     a real into-wall component (`wallRunMinInto`).
   - Dropping off the spire landed you back on the spire. Dropping now steps clear first.
 - The camera is a placeholder orbit; the hero is a capsule.
+
+## Step 3 – Camera
+- The chase camera auto-aligns to velocity above 14 m/s after 0.8 s without mouse input.
+  FOV eases from 75° at rest to 95° at 45 m/s. Radial blur and speed lines fade in from
+  30 m/s. Roll follows the rope (up to 12°).
+- Dive framing works: after about 4 s of diving off the spire the camera sits up and
+  behind and looks almost straight down between towers at the grid. This is the best
+  shot in the build so far.
+- **Camera audit** (`SR.tests.cameraAudit`): 3,600 frames of avenue swinging, a wall run,
+  and a forced 360° spin against a facade. 0 frames with the camera inside geometry, and
+  the closest wall stayed 0.45 m from the lens.
+- The first radial blur banded visibly (8 even taps). Taps are now dithered and the
+  strength halved. Blur still reads as slight grain in software rendering.
+- The camera drops to 1.2 m at street level and relaxes back when you speed up. Hard
+  landings shake the camera.

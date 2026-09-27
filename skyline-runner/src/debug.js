@@ -198,6 +198,45 @@
     return { fired, noAnchor: none, anchorsNotOnGeometry: bad };
   }
 
+  // Run scripted traversal with the full camera update and check that the camera never
+  // ends up inside a building.
+  function cameraAudit() {
+    const game = SR.game, p = game.player, S = SR.Player.S, col = game.world.col;
+    let frames = 0, inside = 0, minClear = Infinity;
+    const perRun = [];
+    const check = () => {
+      frames++;
+      const c = game.camera.position;
+      if (col.pointInside(c.x, c.y, c.z, 0)) { inside++; perRun[perRun.length - 1]++; }
+      for (const [ax, az] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const h = col.raycast(c.x, c.y, c.z, ax, 0, az, 5, SR.Collision.SOLID, {});
+        if (h) minClear = Math.min(minClear, h.t);
+      }
+    };
+    const run = (secs, bot) => {
+      perRun.push(0);
+      const input = game.input; input.virtual = {};
+      for (let i = 0; i < secs * 60; i++) { bot(input.virtual, i / 60); game.update(1 / 60, false); check(); }
+      input.virtual = null;
+    };
+    // 1) swinging down an avenue with the camera auto-following
+    p.pos.set(-310, 45, -1900); p.vel.set(0, 0, 30); p.setState(S.AIRBORNE); game.cam.yaw = Math.PI; game.cam.snap();
+    let lr = -1;
+    run(40, (v, t) => {
+      v.my = 1; v.mx = Math.max(-1, Math.min(1, (p.pos.x + 310) * 0.08 + p.vel.x * 0.08));
+      if (p.state === S.SWINGING) { const r = (p.passedLow && p.vel.y > p.speed * 0.2) || p.swingTime > 3.5; v.swing = !r; if (r) lr = t; }
+      else v.swing = !v.swing && p.vel.y < -1 && t - lr > 0.15;
+    });
+    // 2) run into a facade and wall-run up it, camera sweeping round
+    p.pos.set(-310, 0.9, -1500); p.vel.set(0, 0, 0); p.setState(S.GROUNDED);
+    run(12, (v, t) => { v.mx = t < 6 ? 1 : 0; v.my = t < 6 ? 0.2 : 1; v.sprint = true; game.cam.yaw += 0.01; });
+    // 3) spin the camera around the hero standing in a narrow gap between buildings
+    const b = game.world.layout.buildings.find((q) => Math.abs(q.x1 + 330) < 0.5 && q.h > 40);
+    p.pos.set(b.x1 + 0.6, 0.9, (b.z0 + b.z1) / 2); p.vel.set(0, 0, 0); p.setState(S.GROUNDED);
+    run(8, (v, t) => { game.cam.yaw += 0.05; game.cam.pitch = Math.sin(t) * 0.8; game.cam.updateFwd(); });
+    return { frames, framesInsideGeometry: inside, perScenario: perRun, minWallClearance: +minClear.toFixed(2) };
+  }
+
   SR.Debug = Debug;
-  SR.tests = { cross, diveToSwing, anchorAudit, simulate };
+  SR.tests = { cross, diveToSwing, anchorAudit, cameraAudit, simulate };
 })();
