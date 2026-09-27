@@ -7,22 +7,19 @@
       const container = document.getElementById('game');
       const renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      renderer.toneMappingExposure = 0.95;
       renderer.info.autoReset = false;
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setSize(innerWidth, innerHeight);
       container.appendChild(renderer.domElement);
       this.renderer = renderer;
 
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x9fc3e6);
-      scene.fog = new THREE.FogExp2(0xa9c2dc, 0.00022);
       this.scene = scene;
       this.camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.25, 12000);
-      scene.add(new THREE.HemisphereLight(0xdfefff, 0x445566, 1.2));
-      const sun = new THREE.DirectionalLight(0xffffff, 2.0);
-      sun.position.set(-0.4, 1, 0.3);
-      scene.add(sun);
+      this.sky = new SR.Sky(scene, renderer);
 
       this.world = new SR.World(scene);
       SR.world = this.world;
@@ -31,7 +28,8 @@
       this.city.build();
       this.world.finalize();
       this.traffic = new SR.Traffic(this.world, scene, this.city);
-      this.buildEnvironment();
+      this.polishMaterials();
+      this.sky.captureEnvironment(new THREE.Vector3(150, 420, -900)); // high above the park: sky and skyline
 
       this.input = new SR.Input(renderer.domElement);
       this.player = new SR.Player(this.world);
@@ -63,18 +61,10 @@
       this.spawn();
     }
 
-    // Temporary sky gradient + image-based lighting for reflective glass (refined in step 9).
-    buildEnvironment() {
-      const sky = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), new THREE.ShaderMaterial({
-        side: THREE.BackSide, depthWrite: false,
-        vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-        fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 top = vec3(0.25,0.45,0.8), hor = vec3(0.78,0.85,0.92), gr = vec3(0.32,0.3,0.28); vec3 c = h > 0.0 ? mix(hor, top, pow(h, 0.6)) : mix(hor, gr, pow(-h, 0.4)); gl_FragColor = vec4(c * 1.2, 1.0); }',
-      }));
-      const envScene = new THREE.Scene();
-      envScene.add(sky);
-      const pm = new THREE.PMREMGenerator(this.renderer);
-      this.scene.environment = pm.fromScene(envScene, 0.02).texture;
-      pm.dispose();
+    polishMaterials() {
+      const M = this.city.M;
+      for (const [k, v] of [['brick', 0.45], ['limestone', 0.45], ['deco', 0.45], ['store', 0.35], ['glass', 0.35], ['trim', 0.3], ['metal', 0.3]]) SR.addCanyonShading(M[k], v);
+      this.city.water.material = SR.makeWaterMaterial();
     }
 
     spawn() {
@@ -109,6 +99,8 @@
       }
       this.web.update(dt, p, this.hero.handWorld);
       this.city.update(this.time);
+      this.sky.update(this.camera, p.pos, Math.max(0, p.feetY));
+      this.city.water.material.userData.normalTex.offset.set(this.time * 0.004, this.time * 0.0025);
       this.traffic.update(dt, p, this.camera.position);
       this.audio.update(dt, this);
       SR.foliageUniforms.uCamPos.value.copy(this.camera.position);

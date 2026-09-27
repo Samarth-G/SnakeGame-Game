@@ -150,3 +150,19 @@ virtual input at a fixed 60 Hz.
   at 56 m/s 0.069 RMS (wind rising was too subtle at first, so it was boosted), and a
   hard landing peaks at 0.36 RMS. Nothing clips thanks to the bus compressor. Tone has
   only been checked by numbers, not by ear.
+
+## Step 9 – Lighting and visual polish
+- Clear afternoon: the sky dome has a sun glow and disc, 16 cumulus clouds, and
+  blue-grey exponential haze, so the far skyline and mainland fade into it.
+- The sun (south-west, 38° elevation) casts PCF soft shadows. The shadow frustum follows
+  the hero, grows with altitude (90 m → 420 m radius) and snaps to texels so it doesn't
+  shimmer. From the dive camera, tower shadows fall across the avenues.
+- Image-based lighting comes from a cube map of the real city captured high above the
+  park. The first capture, beside dark midtown towers, made every glass tower read black.
+  Glass is now less metallic with sharp reflections, so it catches sky at grazing angles
+  and shows its blue-grey panels head-on.
+- Street canyons darken toward the ground (a cheap AO/GI stand-in on facades). The river
+  has an animated procedural normal map with a sun glint. A final grade adds a little
+  saturation and a warm afternoon tint before ACES tone mapping.
+- Autumn foliage looked pastel under the old flat lighting. It now reads orange, amber
+  and yellow with some green.

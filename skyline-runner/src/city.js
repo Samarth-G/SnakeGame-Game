@@ -43,7 +43,7 @@
         brick: std({ map: T.brick, roughness: 0.92 }),
         limestone: std({ map: T.limestone, roughness: 0.88 }),
         deco: std({ map: T.deco, roughness: 0.75 }),
-        glass: std({ map: T.glass, roughness: 0.08, metalness: 0.88, envMapIntensity: 1.25 }),
+        glass: std({ map: T.glass, roughness: 0.06, metalness: 0.45, envMapIntensity: 1.6 }),
         store: std({ map: T.store, emissiveMap: T.storeEmissive, emissive: 0xffe2b8, emissiveIntensity: 0.55, roughness: 0.6 }),
         roof: std({ map: T.roof, roughness: 0.95 }),
         trim: std({ color: 0xd9d1c1, roughness: 0.8 }),
@@ -514,10 +514,10 @@
       const k = r();
       const c = new THREE.Color();
       if (k < (greenBias || 0.15)) c.setRGB(0.32 + r() * 0.1, 0.5 + r() * 0.12, 0.18);
-      else if (k < 0.45) c.setRGB(0.95, 0.42 + r() * 0.12, 0.08);          // orange
-      else if (k < 0.7) c.setRGB(0.97, 0.62 + r() * 0.1, 0.12);            // amber
-      else if (k < 0.88) c.setRGB(0.95, 0.8 + r() * 0.08, 0.22);           // yellow
-      else c.setRGB(0.78, 0.22 + r() * 0.1, 0.1);                           // red
+      else if (k < 0.45) c.setRGB(0.9, 0.3 + r() * 0.1, 0.04);            // orange
+      else if (k < 0.7) c.setRGB(0.92, 0.52 + r() * 0.1, 0.06);            // amber
+      else if (k < 0.88) c.setRGB(0.9, 0.72 + r() * 0.08, 0.12);           // yellow
+      else c.setRGB(0.7, 0.14 + r() * 0.08, 0.06);                          // red
       return c;
     }
 

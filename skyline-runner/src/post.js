@@ -36,6 +36,9 @@
         float radial = smoothstep(0.32 + seed * 0.12, 0.85, r);
         col = mix(col, vec3(1.0), on * thin * radial * uLines * 0.22);
       }
+      // Grade: a touch more saturation and a warm afternoon tint.
+      float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      col = mix(vec3(lum), col, 1.12) * vec3(1.03, 1.0, 0.965);
       col = mix(col, uFlashColor, uFlash);
       col *= 1.0 - uVignette * smoothstep(0.45, 1.05, r);
       col *= 1.0 - uFade;
