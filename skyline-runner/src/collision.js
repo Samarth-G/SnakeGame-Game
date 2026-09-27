@@ -2,7 +2,7 @@
 // uniform XZ grid. Provides ray casts (web anchors, camera), capsule resolution
 // (player) and ground probes.
 (function () {
-  const SOLID = 1, ANCHOR = 2, PERCH = 4;
+  const SOLID = 1, ANCHOR = 2, PERCH = 4, VAULT = 8, TREE = 16;
 
   class Collision {
     constructor(cellSize) {
@@ -203,5 +203,7 @@
   Collision.SOLID = SOLID;
   Collision.ANCHOR = ANCHOR;
   Collision.PERCH = PERCH;
+  Collision.VAULT = VAULT;
+  Collision.TREE = TREE;
   SR.Collision = Collision;
 })();

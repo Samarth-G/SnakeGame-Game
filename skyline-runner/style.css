@@ -4,3 +4,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
   color: #fff; background: radial-gradient(ellipse at center, rgba(10,20,40,.55), rgba(0,0,0,.8)); cursor: pointer; z-index: 10; }
 #overlay h1 { font-weight: 800; letter-spacing: .3em; font-size: 42px; margin: 0 0 12px; }
 #overlay p { opacity: .85; margin: 4px; }
+#debug-overlay { position: fixed; left: 12px; top: 12px; margin: 0; padding: 8px 10px; background: rgba(0,0,0,.55); color: #d6f5ff;
+  font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; z-index: 5; pointer-events: none; border-radius: 4px; }
+#tuning-panel { position: fixed; right: 12px; top: 12px; bottom: 12px; width: 300px; overflow-y: auto; background: rgba(8,14,26,.92);
+  color: #dfe8f5; font: 12px ui-monospace, Menlo, Consolas, monospace; padding: 10px; z-index: 20; border-radius: 6px; }
+#tuning-panel h3 { margin: 0 0 8px; font-size: 13px; }
+#tuning-panel label { display: flex; justify-content: space-between; align-items: center; margin: 2px 0; }
+#tuning-panel input { width: 80px; background: #111b2e; color: #fff; border: 1px solid #334; padding: 2px 4px; }
+#tuning-panel .row { display: flex; gap: 6px; margin-bottom: 8px; }
+#tuning-panel button { background: #22324f; color: #fff; border: 0; padding: 4px 8px; cursor: pointer; border-radius: 3px; }

@@ -26,10 +26,10 @@ SR.TUNING_DEFAULTS = {
   // --- Web swing: anchor search ---------------------------------------------
   anchorMinDist: 20,         // m ahead (horizontal)
   anchorMaxDist: 60,
-  anchorIdealDist: 34,
+  anchorIdealDist: 26,
   anchorMinUp: 15,           // m above the player
   anchorMaxUp: 40,
-  anchorIdealUp: 26,
+  anchorIdealUp: 32,
   anchorSideMax: 40,         // m of lateral offset searched on each side
   anchorRelaxFactor: 1.6,    // if nothing is found, search again with ranges scaled by this
   anchorMinUpRelaxed: 6,     // …but never closer than this above the player
@@ -43,14 +43,18 @@ SR.TUNING_DEFAULTS = {
   swingSteerMaxAngle: 35,    // degrees the swing plane can be bent by the stick
   swingSteerRate: 110,       // degrees/s of plane rotation at full stick
   swingPumpAccel: 3,         // m/s² along velocity while holding forward
-  swingMaxSpeed: 45,         // m/s
-  swingOverspeedDecay: 6,    // m/s² bleed-off when entering a swing faster than max (dives)
+  swingMaxSpeed: 45,         // m/s, soft cap while swinging
+  swingOverspeedDecay: 6,    // m/s² bleed-off above swingMaxSpeed (grows with the overshoot)
   swingEntrySpeedKeep: 0.97, // fraction of speed kept when the rope snaps taut
   carRoofHeight: 2.2,        // m, typical roof of traffic below
   swingGroundClearance: 3,   // m above car roofs for the lowest point of the arc
   releaseBoost: 6,           // m/s upward on release after the low point
   webSlackTime: 0.2,         // s the web stays visible (slack) after release
   swingMinTime: 0.18,        // s, very short taps still give a small swing
+  swingPivotLateral: 0.3,    // fraction of the anchor's sideways offset used by the pendulum
+                             // (the web is drawn to the real anchor; the physics pivot sits
+                             // closer to the travel line so side anchors don't yank you into walls)
+  wallRunMinInto: 0.45,      // fraction of speed that must point into a facade to start a wall run
 
   // --- Wall run ---------------------------------------------------------------
   wallRunMinSpeed: 5,
