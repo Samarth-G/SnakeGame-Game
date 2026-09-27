@@ -14,3 +14,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 #tuning-panel .row { display: flex; gap: 6px; margin-bottom: 8px; }
 #tuning-panel button { background: #22324f; color: #fff; border: 0; padding: 4px 8px; cursor: pointer; border-radius: 3px; }
 #hud { position: fixed; pointer-events: none; z-index: 4; }
+#overlay .controls { margin-top: 18px; border-collapse: collapse; font-size: 13px; opacity: .85; }
+#overlay .controls td { padding: 2px 10px; }
+#overlay .controls td:first-child { text-align: right; color: #9fc1ff; }

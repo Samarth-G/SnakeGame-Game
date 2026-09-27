@@ -4,7 +4,7 @@
 (function () {
   const W = SR.WORLD, U = SR.util, C = SR.Collision, merge = SR.geo.mergeParts;
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
-  const wheel = () => new THREE.CylinderGeometry(0.36, 0.36, 0.28, 10);
+  const wheel = () => new THREE.CylinderGeometry(0.36, 0.36, 0.28, 6);
   const BODY = [1, 1, 1], GLASS = [0.1, 0.12, 0.14], BLACK = [0.05, 0.05, 0.05];
 
   function wheels(len, wid, zf, zr) {
@@ -121,15 +121,19 @@
 
     makeMeshes() {
       this.mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35, metalness: 0.35 });
-      this.meshes = {};
+      // Two sets per type: near cars cast shadows, far ones don't (an InstancedMesh is
+      // culled as a whole, so otherwise every visible car would hit the shadow pass).
+      this.meshes = {}; this.farMeshes = {};
       for (const t in VEHICLES) {
-        const count = this.cars.filter((c) => c.type === t).length;
-        const m = new THREE.InstancedMesh(VEHICLES[t].geo(), this.mat, Math.max(1, count));
-        m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        m.setColorAt(0, new THREE.Color());
-        m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true; m.count = 0;
-        this.scene.add(m);
-        this.meshes[t] = m;
+        const count = this.cars.filter((c) => c.type === t).length, geo = VEHICLES[t].geo();
+        for (const [set, shadow] of [[this.meshes, true], [this.farMeshes, false]]) {
+          const m = new THREE.InstancedMesh(geo, this.mat, Math.max(1, count));
+          m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          m.setColorAt(0, new THREE.Color());
+          m.frustumCulled = false; m.castShadow = shadow; m.receiveShadow = true; m.count = 0;
+          this.scene.add(m);
+          set[t] = m;
+        }
       }
     }
 
@@ -203,23 +207,25 @@
       // --- draw cars near the camera -------------------------------------------------------------
       const m = this._m || (this._m = new THREE.Matrix4()), q = this._q || (this._q = new THREE.Quaternion()), up = new THREE.Vector3(0, 1, 0);
       const one = new THREE.Vector3(1, 1, 1), p = new THREE.Vector3();
-      const counts = {};
-      for (const k in this.meshes) counts[k] = 0;
-      const R2 = 1100 * 1100;
+      const counts = {}, farCounts = {};
+      for (const k in this.meshes) { counts[k] = 0; farCounts[k] = 0; }
+      const R2 = 800 * 800, NEAR2 = 150 * 150;
       for (const car of this.cars) {
-        const dx = car.x - camPos.x, dz = car.z - camPos.z;
-        if (dx * dx + dz * dz > R2) continue;
-        const mesh = this.meshes[car.type], i = counts[car.type]++;
+        const dx = car.x - camPos.x, dz = car.z - camPos.z, d2 = dx * dx + dz * dz;
+        if (d2 > R2) continue;
+        const near = d2 < NEAR2;
+        const mesh = (near ? this.meshes : this.farMeshes)[car.type], i = near ? counts[car.type]++ : farCounts[car.type]++;
         q.setFromAxisAngle(up, car.ry);
         m.compose(p.set(car.x, 0, car.z), q, one);
         mesh.setMatrixAt(i, m);
         mesh.setColorAt(i, car.color);
       }
       for (const k in this.meshes) {
-        const mesh = this.meshes[k];
-        mesh.count = counts[k];
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        for (const [mesh, n] of [[this.meshes[k], counts[k]], [this.farMeshes[k], farCounts[k]]]) {
+          mesh.count = n;
+          mesh.instanceMatrix.needsUpdate = true;
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        }
       }
 
       // --- dynamic colliders near the hero: cars can be vaulted over --------------------------
@@ -299,12 +305,12 @@
     makeMesh(scene) {
       const merge = SR.geo.mergeParts;
       // Two meshes share matrices: clothes (tinted by shirt colour) and skin/legs.
-      const torso = merge([{ geo: new THREE.CylinderGeometry(0.2, 0.17, 0.62, 8), pos: [0, 1.22, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.48, 0.12, 0.24), pos: [0, 1.48, 0], col: [1, 1, 1] }]);
+      const torso = merge([{ geo: new THREE.CylinderGeometry(0.2, 0.17, 0.62, 6), pos: [0, 1.22, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.48, 0.12, 0.24), pos: [0, 1.48, 0], col: [1, 1, 1] }]);
       const legs = merge([
         { geo: new THREE.BoxGeometry(0.14, 0.9, 0.16), pos: [-0.1, 0.45, 0], col: [1, 1, 1] },
         { geo: new THREE.BoxGeometry(0.14, 0.9, 0.16), pos: [0.1, 0.45, 0], col: [1, 1, 1] },
       ]);
-      const head = merge([{ geo: new THREE.SphereGeometry(0.12, 10, 8), pos: [0, 1.68, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.08, 0.55, 0.08), pos: [-0.26, 1.2, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.08, 0.55, 0.08), pos: [0.26, 1.2, 0], col: [1, 1, 1] }]);
+      const head = merge([{ geo: new THREE.SphereGeometry(0.12, 6, 5), pos: [0, 1.68, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.08, 0.55, 0.08), pos: [-0.26, 1.2, 0], col: [1, 1, 1] }, { geo: new THREE.BoxGeometry(0.08, 0.55, 0.08), pos: [0.26, 1.2, 0], col: [1, 1, 1] }]);
       const walkMat = () => {
         const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 });
         m.onBeforeCompile = (sh) => {
@@ -320,14 +326,16 @@
         return m;
       };
       const N = this.list.length;
-      this.meshes = [torso, legs, head].map((g) => {
+      const mk = (shadow) => [torso, legs, head].map((g) => {
         const m = new THREE.InstancedMesh(g, walkMat(), N);
         m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-        m.frustumCulled = false; m.castShadow = true; m.count = 0;
+        m.frustumCulled = false; m.castShadow = shadow; m.count = 0;
         m.setColorAt(0, new THREE.Color());
         scene.add(m);
         return m;
       });
+      this.meshes = mk(true);       // within 70 m: cast shadows
+      this.farMeshes = mk(false);
     }
 
     update(dt, cam) {
@@ -335,7 +343,7 @@
       this.uTime && (this.uTime.value = this.time);
       const R2 = 380 * 380, r = this.rnd;
       const m = this._m || (this._m = new THREE.Matrix4()), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), s3 = new THREE.Vector3(), p = new THREE.Vector3();
-      let n = 0;
+      let n = 0, nf = 0;
       for (const o of this.list) {
         let x, z, dir;
         if (o.kind === 'loop') {
@@ -369,14 +377,14 @@
         if (dx * dx + dz * dz > R2) continue;
         q.setFromAxisAngle(up, dir);
         m.compose(p.set(x, 0.15, z), q, s3.set(1, o.h, 1));
-        for (const mesh of this.meshes) mesh.setMatrixAt(n, m);
-        this.meshes[0].setColorAt(n, o.shirt);
-        this.meshes[1].setColorAt(n, o.legs);
-        this.meshes[2].setColorAt(n, o.skin);
-        n++;
+        const near = dx * dx + dz * dz < 70 * 70, set = near ? this.meshes : this.farMeshes, i = near ? n++ : nf++;
+        for (const mesh of set) mesh.setMatrixAt(i, m);
+        set[0].setColorAt(i, o.shirt);
+        set[1].setColorAt(i, o.legs);
+        set[2].setColorAt(i, o.skin);
       }
-      for (const mesh of this.meshes) { mesh.count = n; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
-      this.visible = n;
+      for (const [set, c] of [[this.meshes, n], [this.farMeshes, nf]]) for (const mesh of set) { mesh.count = c; mesh.instanceMatrix.needsUpdate = true; mesh.instanceColor.needsUpdate = true; }
+      this.visible = n + nf;
     }
   }
 

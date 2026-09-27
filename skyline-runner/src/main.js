@@ -9,7 +9,11 @@
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 0.95;
       renderer.info.autoReset = false;
-      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      // Dynamic resolution: start at (up to) 1.5x device pixels and scale between 60% and
+      // 100% of that to hold ~60 fps if the GPU can't keep up.
+      this.basePR = Math.min(devicePixelRatio || 1, 1.5);
+      this.resScale = 1; this.frameAvg = 16.7; this.resTimer = 0;
+      renderer.setPixelRatio(this.basePR);
       renderer.setSize(innerWidth, innerHeight);
       container.appendChild(renderer.domElement);
       this.renderer = renderer;
@@ -99,6 +103,8 @@
       }
       this.web.update(dt, p, this.hero.handWorld);
       this.city.update(this.time);
+      this.lodTimer = (this.lodTimer || 0) - dt;
+      if (this.lodTimer <= 0) { this.lodTimer = 0.15; this.city.updateLOD(this.camera.position); }
       this.sky.update(this.camera, p.pos, Math.max(0, p.feetY));
       this.city.water.material.userData.normalTex.offset.set(this.time * 0.004, this.time * 0.0025);
       this.traffic.update(dt, p, this.camera.position);
@@ -138,9 +144,27 @@
       this.post.render(this.scene, this.camera, { blur: c.speedFx, lines: c.speedFx, time: this.time, flash: this.flash * 0.6, flashColor: SR.Hero.SUITS[this.hero.suitIndex].name === 'Nocturne' ? new THREE.Color(0.6, 0.7, 1.0) : new THREE.Color(1.0, 0.7, 0.45) });
     }
 
+    adaptResolution(ms) {
+      this.frameAvg = this.frameAvg * 0.95 + ms * 0.05;
+      this.resTimer += ms / 1000;
+      if (this.resTimer < 1.5) return;
+      let s = this.resScale;
+      if (this.frameAvg > 19) s = Math.max(0.6, s - 0.1);
+      else if (this.frameAvg < 14.5) s = Math.min(1, s + 0.05);
+      if (s !== this.resScale) {
+        this.resScale = s;
+        this.renderer.setPixelRatio(this.basePR * s);
+        this.renderer.setSize(innerWidth, innerHeight);
+        this.post.setSize();
+      }
+      this.resTimer = 0;
+    }
+
     frame(now) {
-      const dt = Math.min(0.05, (now - (this.last || now)) / 1000);
+      const ms = now - (this.last || now);
+      const dt = Math.min(0.05, ms / 1000);
       this.last = now;
+      if (ms > 0 && ms < 200 && !document.hidden) this.adaptResolution(ms);
       this.update(dt, false);
       this.render();
       requestAnimationFrame((t) => this.frame(t));
@@ -159,5 +183,8 @@
     game.renderer.setSize(innerWidth, innerHeight);
     game.post.setSize();
   });
+  // Ctrl is the dive key and Ctrl+W closes the tab: ask before leaving mid-session.
+  addEventListener('beforeunload', (e) => { if (game.started) { e.preventDefault(); e.returnValue = ''; } });
+  document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement) game.started = true; });
   requestAnimationFrame((t) => game.frame(t));
 })();

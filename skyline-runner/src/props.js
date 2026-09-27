@@ -24,7 +24,7 @@
   // colour gives autumn tones; the trunk is dark so tinting barely affects it.
   P.tree = () => {
     const canopy = jitter(new G.IcosahedronGeometry(0.34, 1), 0.08, 5);
-    const c2 = jitter(new G.IcosahedronGeometry(0.22, 1), 0.06, 8);
+    const c2 = jitter(new G.IcosahedronGeometry(0.22, 0), 0.05, 8);
     return merge([
       { geo: cyl(0.011, 0.018, 0.55, 5), pos: [0, 0.275, 0], col: [0.28, 0.2, 0.14] },
       { geo: cyl(0.006, 0.01, 0.25, 4), pos: [0.05, 0.45, 0], rot: [0, 0, -0.7], col: [0.28, 0.2, 0.14] },
@@ -33,6 +33,12 @@
       { geo: c2, pos: [-0.14, 0.62, -0.1], col: [0.94, 0.94, 0.94] },
     ]);
   };
+
+  // Far LOD: one low-poly blob and a stick (≈10x fewer triangles).
+  P.treeLo = () => merge([
+    { geo: cyl(0.014, 0.018, 0.55, 4), pos: [0, 0.275, 0], col: [0.28, 0.2, 0.14] },
+    { geo: new G.IcosahedronGeometry(0.4, 0), pos: [0, 0.66, 0], scale: [1, 0.85, 1], col: [1, 1, 1] },
+  ]);
 
   P.lamp = () => merge([
     { geo: cyl(0.07, 0.11, 7, 6), pos: [0, 3.5, 0], col: col(0x2e3a34) },
@@ -93,7 +99,7 @@
   // Roof kit
   P.hvac = () => merge([
     { geo: box(1, 1, 1), pos: [0, 0.5, 0], col: col(0xa9adb0) },
-    { geo: cyl(0.3, 0.3, 0.06, 12), pos: [0, 1.02, 0], col: col(0x5c6064) },
+    { geo: cyl(0.3, 0.3, 0.06, 7), pos: [0, 1.02, 0], col: col(0x5c6064) },
     { geo: box(1.02, 0.12, 1.02), pos: [0, 0.06, 0], col: col(0x7d8185) },
   ]);
   P.bulkhead = () => merge([
@@ -108,9 +114,14 @@
       { geo: cyl(2.3, 2.3, 0.2, 14), pos: [0, 5.0, 0], col: col(0x3a3a3a) },
     ];
     for (const [x, z] of [[1.5, 1.5], [-1.5, 1.5], [1.5, -1.5], [-1.5, -1.5]]) parts.push({ geo: box(0.25, 4, 0.25), pos: [x, 2, z], col: col(0x333333) });
-    for (const y of [4.6, 5.8, 7.0, 8.0]) parts.push({ geo: cyl(2.24, 2.24, 0.08, 14), pos: [0, y + 0.4, 0], col: col(0x3a3a3a) });
+    for (const y of [5.8, 8.0]) parts.push({ geo: cyl(2.24, 2.24, 0.08, 14), pos: [0, y + 0.4, 0], col: col(0x3a3a3a) });
     return merge(parts);
   };
+  P.waterTowerLo = () => merge([
+    { geo: cyl(2.2, 2.2, 4.4, 6), pos: [0, 6.2, 0], col: col(0x8a6a4a) },
+    { geo: new G.ConeGeometry(2.4, 1.6, 6), pos: [0, 9.2, 0], col: col(0x5a4636) },
+    { geo: box(3.2, 4, 3.2), pos: [0, 2, 0], col: col(0x333333) },
+  ]);
   P.solar = () => merge([{ geo: box(1.7, 0.06, 1.0), pos: [0, 0.6, 0], rot: [-0.45, 0, 0], col: col(0x1f3564) }, { geo: box(0.08, 0.6, 0.08), pos: [0, 0.3, 0.2], col: col(0x888888) }]);
   P.skylight = () => merge([{ geo: box(1, 0.3, 1), pos: [0, 0.15, 0], col: col(0x7a7f85) }, { geo: new G.ConeGeometry(0.72, 0.5, 4, 1), pos: [0, 0.55, 0], rot: [0, Math.PI / 4, 0], col: col(0x9fc2d8) }]);
   P.antenna = () => merge([

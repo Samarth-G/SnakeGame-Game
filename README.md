@@ -12,3 +12,9 @@ Instructions:
 Warning: 
 --------
 Do not edit the highscore.txt file.
+
+Skyline Runner
+--------------
+
+The `skyline-runner/` folder has a separate three.js web-swinging traversal demo. Open
+`skyline-runner/index.html` in a browser; see `skyline-runner/README.md`.

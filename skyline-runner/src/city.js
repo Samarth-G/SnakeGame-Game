@@ -30,7 +30,8 @@
       this.world = world; this.scene = scene; this.T = textures; this.L = world.layout; this.col = world.col;
       this.rnd = U.rng(4242);
       this.groups = new Map();           // chunkKey -> { mat -> GeoBuilder }
-      this.inst = {};                    // type -> ChunkedInstances
+      this.inst = {};                    // type -> ChunkedInstances / FieldInstances / merged
+      this.fields = {};                  // type -> FieldInstances (distance-bucketed)
       this.animated = [];                // billboards / ticker updated per frame
       this.meshes = [];
       this.makeMaterials();
@@ -80,11 +81,28 @@
       return g[mat] || (g[mat] = new SR.GeoBuilder());
     }
     instances(type, geoFn, material, opts) {
-      if (!this.inst[type]) this.inst[type] = new SR.geo.ChunkedInstances(this.scene, geoFn(), material, 500, opts);
-      return this.inst[type];
+      if (this.inst[type]) return this.inst[type];
+      if (SR.LOD.merge.has(type)) {
+        // Low-count props are baked into the chunk's merged geometry: one draw call per
+        // chunk for all street furniture instead of one per prop type.
+        const geo = geoFn(), matName = material === this.M.propMetal ? 'propMetal' : 'prop', col = [1, 1, 1];
+        return (this.inst[type] = {
+          merged: true,
+          add: (m, c) => {
+            if (c) { col[0] = c.r; col[1] = c.g; col[2] = c.b; } else col[0] = col[1] = col[2] = 1;
+            this.gb(m.elements[12], m.elements[14], matName).addGeometry(geo, m, col);
+          },
+          build: () => [],
+        });
+      }
+      const o = Object.assign({ kind: type }, opts);
+      if (o.field) return (this.inst[type] = this.fields[type] = new SR.geo.FieldInstances(this.scene, geoFn(), material, o));
+      return (this.inst[type] = new SR.geo.ChunkedInstances(this.scene, geoFn(), material, 500, o));
     }
 
     build() {
+      SR.LOD.tree.lodGeo = SR.props.treeLo();
+      SR.LOD.waterTower.lodGeo = SR.props.waterTowerLo();
       this.buildBuildings();
       this.buildStreets();
       this.buildBoulevard();
@@ -115,8 +133,8 @@
         deco: [[1, 1, 1], [0.96, 0.9, 0.8], [0.88, 0.86, 0.84], [1.02, 0.94, 0.86]],
       };
       pal.supertall = [[0.8, 0.9, 1.05]];
-      const acs = this.instances('ac', SR.props.acUnit, this.M.prop, { detail: 2 });
-      const fes = this.instances('fireEscape', SR.props.fireEscape, this.M.propMetal, { detail: 2 });
+      const acs = this.instances('ac', SR.props.acUnit, this.M.prop, SR.LOD.ac);
+      const fes = this.instances('fireEscape', SR.props.fireEscape, this.M.propMetal, SR.LOD.fireEscape);
       const awn = this.instances('awning', SR.props.awning, this.M.prop, { detail: 1 });
       const sideFaces = 1 | 2 | 16 | 32;
       const shopCells = SR.SHOPS.length;
@@ -226,15 +244,15 @@
       for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) free.push([t.x0 + 1.5 + cs * (i + 0.5), t.z0 + 1.5 + cs * (j + 0.5)]);
       const take = () => (free.length ? free.splice(Math.floor(r() * free.length), 1)[0] : null);
       const solidBox = (x, z, hw, hd, h, flags) => col.add(x - hw, y, z - hd, x + hw, y + h, z + hd, flags == null ? C.SOLID | C.ANCHOR : flags, b);
-      const bulk = this.instances('bulkhead', SR.props.bulkhead, this.M.prop, { castShadow: true });
-      const hv = this.instances('hvac', SR.props.hvac, this.M.propMetal, { castShadow: true, detail: 1 });
+      const bulk = this.instances('bulkhead', SR.props.bulkhead, this.M.prop, SR.LOD.roofBig);
+      const hv = this.instances('hvac', SR.props.hvac, this.M.propMetal, SR.LOD.roofSmall);
 
       if (!top && !residential && r() < 0.5) return;
       if (residential) {
         let s = take();
         if (s) { const bw = 3, bh = 3.2, bd = 3.6; bulk.add(mat4(s[0], y, s[1], r.int(0, 3) * Math.PI / 2, bw, bh, bd).clone(), new THREE.Color(0.75 + r() * 0.2, 0.55 + r() * 0.15, 0.48 + r() * 0.1)); solidBox(s[0], s[1], bw / 2, bd / 2, bh); }
         if (top && w > 11 && d > 11 && r() < 0.6 && (s = take())) {
-          this.instances('waterTower', SR.props.waterTower, this.M.prop, { castShadow: true }).add(mat4(s[0], y, s[1], r() * 6).clone());
+          this.instances('waterTower', SR.props.waterTower, this.M.prop, SR.LOD.waterTower).add(mat4(s[0], y, s[1], r() * 6).clone());
           solidBox(s[0], s[1], 2.3, 2.3, 10);
           this.world.addPerch(s[0], y + 10, s[1], 'watertower');
         }
@@ -490,7 +508,7 @@
         }
       }
       // Dense deciduous trees. Tall ones can be web anchors (the only anchors in the park).
-      const tree = this.instances('tree', SR.props.tree, this.M.foliage, { castShadow: true });
+      const tree = this.instances('tree', SR.props.tree, this.M.foliage, SR.LOD.tree);
       const distSeg = (x, z, a, b) => {
         const dx = b[0] - a[0], dz = b[1] - a[1], t = U.clamp(((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz), 0, 1);
         return Math.hypot(x - a[0] - dx * t, z - a[1] - dz * t);
@@ -524,7 +542,7 @@
     // ------------------------------------------------------------------ street furniture
     buildStreetFurniture() {
       const L = this.L, r = this.rnd;
-      const tree = this.instances('tree', SR.props.tree, this.M.foliage, { castShadow: true });
+      const tree = this.instances('tree', SR.props.tree, this.M.foliage, SR.LOD.tree);
       const lamp = this.instances('lamp', SR.props.lamp, this.M.propMetal, { detail: 1 });
       const hyd = this.instances('hydrant', SR.props.hydrant, this.M.prop, { detail: 2 });
       const news = this.instances('newsbox', SR.props.newsbox, this.M.prop, { detail: 2 });
@@ -822,15 +840,35 @@
           mesh.castShadow = castMats.has(mat) && key !== 'far';
           mesh.receiveShadow = true;
           mesh.userData.chunk = key;
+          mesh.userData.kind = mat;
           mesh.userData.detail = mat === 'marking' || mat === 'arrow' || mat === 'signs' ? 1 : 0;
+          mesh.userData.maxDist = { marking: 900, arrow: 450, signs: 600, billboard: 1600, prop: 1000, propMetal: 1000 }[mat] || 0;
+          mesh.userData.castShadow = mesh.castShadow;
           this.scene.add(mesh);
           this.meshes.push(mesh);
         }
       }
-      for (const k in this.inst) this.meshes.push(...this.inst[k].build());
+      for (const k in this.inst) if (!this.inst[k].merged) this.meshes.push(...this.inst[k].build());
     }
 
     update(t) { for (const f of this.animated) f(t); }
+
+    // HLOD-style distance management: swap far trees / water towers to low-poly twins,
+    // drop street furniture and markings beyond their useful range, and only let nearby
+    // props cast shadows. Runs a few times a second.
+    updateLOD(cam) {
+      for (const k in this.fields) this.fields[k].update(cam);
+      for (const m of this.meshes) {
+        const o = m.userData;
+        if (!o.maxDist && !o.lod && !o.shadowDist) continue;
+        const sph = m.isInstancedMesh ? m.boundingSphere : m.geometry.boundingSphere;
+        const d = Math.max(0, cam.distanceTo(sph.center) - sph.radius);
+        const vis = !o.maxDist || d < o.maxDist;
+        if (o.lod) { m.visible = vis && d < o.lodDist; o.lod.visible = vis && !m.visible; }
+        else m.visible = vis;
+        if (o.castShadow && o.shadowDist) m.castShadow = d < o.shadowDist;
+      }
+    }
   }
 
   // Foliage fades out (dithered) where it sits between the camera and the hero.
@@ -862,5 +900,14 @@
     return m;
   };
 
+  SR.LOD = {
+    tree: { field: true, castShadow: true, lodGeo: null, radius: 230 },
+    waterTower: { field: true, castShadow: true, lodGeo: null, radius: 420 },
+    ac: { field: true, radius: 260 },
+    fireEscape: { field: true, radius: 320 },
+    roofBig: { castShadow: true, shadowDist: 450, maxDist: 2200 },
+    roofSmall: { castShadow: true, shadowDist: 250, maxDist: 900, detail: 1 },
+    merge: new Set(['lamp', 'signal', 'hydrant', 'newsbox', 'bin', 'bikerack', 'awning', 'planter', 'umbrella', 'cafe', 'antenna', 'bbFrame', 'skylight', 'solar']),
+  };
   SR.City = City;
 })();

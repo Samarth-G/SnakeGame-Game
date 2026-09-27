@@ -166,3 +166,34 @@ virtual input at a fixed 60 Hz.
   saturation and a warm afternoon tint before ACES tone mapping.
 - Autumn foliage looked pastel under the old flat lighting. It now reads orange, amber
   and yellow with some green.
+
+## Step 10 – Performance pass
+Measured with `renderer.info` (main pass + shadow pass + post) and JS update time, in
+headless Chromium on the CPU. Real GPU frame times were **not** measurable here.
+
+| View | Before: calls / triangles | After: calls / triangles | JS update |
+|---|---|---|---|
+| Spire (whole island in view) | 633 / 5.65 M | 322 / 1.56 M | 3.3 ms |
+| Street level | 788 / 6.69 M | 373 / 1.81 M | 3.8 ms |
+| Mid-swing | 477 / 4.46 M | 277 / 1.60 M | 2.8 ms |
+
+- The per-category breakdown showed trees (1.4 M), cars and pedestrians (1.24 M, every
+  visible car was also drawn into the shadow map), fire escapes, water towers, HVAC and
+  AC units as the big costs.
+- Fixes:
+  - Trees, water towers, AC units and fire escapes use distance-bucketed instancing:
+    full detail near the camera, low-poly twins or nothing beyond. That is two draw
+    calls per kind, re-bucketed every 15 m of camera movement.
+  - Cars and pedestrians split into a near set that casts shadows and a far set that
+    doesn't. Cars are drawn within 800 m.
+  - Low-count street furniture is baked into per-chunk merged meshes.
+  - Markings, signs and arrows are culled by distance.
+  - Cheaper wheels, fans and water-tower bands.
+  - Dynamic resolution (60–100% of up to 1.5× device pixels) as a safety net.
+- The depth buffer stays logarithmic. Reversed-Z isn't available in the software
+  renderer, so it couldn't be tested and was left out.
+- Final regression run on this build:
+  - 15 crossings (5 avenues × 3 release timings): 74–82 s, **0 ground touches**.
+  - Dive → swing: caught at 77 m/s, no ground touch.
+  - Anchor audit: 0 of 208 anchors off geometry.
+  - Camera audit: 0 of 3,600 frames inside geometry.

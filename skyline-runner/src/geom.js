@@ -108,7 +108,8 @@
     }
     add(matrix, color) {
       const e = matrix.elements;
-      const k = Math.floor(e[12] / this.cs) * 1000 + Math.floor(e[14] / this.cs);
+      const cs = this.opts.chunk || this.cs;
+      const k = Math.floor(e[12] / cs) * 1000 + Math.floor(e[14] / cs);
       let c = this.chunks.get(k);
       if (!c) { c = { m: [], c: [] }; this.chunks.set(k, c); }
       c.m.push(matrix.clone());
@@ -126,14 +127,84 @@
         mesh.receiveShadow = this.opts.receiveShadow !== false;
         mesh.computeBoundingSphere();
         mesh.userData.detail = this.opts.detail || 0;
+        mesh.userData.kind = this.opts.kind || 'inst';
+        mesh.userData.castShadow = mesh.castShadow;
+        const dflt = [0, 750, 320][this.opts.detail || 0];
+        mesh.userData.maxDist = this.opts.maxDist || dflt;
+        mesh.userData.lodDist = this.opts.lodDist || 0;
+        mesh.userData.shadowDist = this.opts.shadowDist || 0;
         this.scene.add(mesh);
         this.meshes.push(mesh);
+        // Optional low-detail twin sharing the same instance buffers (HLOD-style swap).
+        if (this.opts.lodGeo) {
+          const lo = new THREE.InstancedMesh(this.opts.lodGeo, this.mat, c.m.length);
+          lo.instanceMatrix = mesh.instanceMatrix;
+          if (mesh.instanceColor) lo.instanceColor = mesh.instanceColor;
+          lo.boundingSphere = mesh.boundingSphere.clone();
+          lo.castShadow = false; lo.receiveShadow = mesh.receiveShadow; lo.visible = false;
+          lo.userData.kind = mesh.userData.kind + '-lod';
+          mesh.userData.lod = lo;
+          this.scene.add(lo);
+        }
       }
       this.chunks.clear();
       return this.meshes;
     }
   }
 
+  // High-count props (trees, AC units, fire escapes, water towers): one InstancedMesh for
+  // instances near the camera (full detail, casts shadows) and optionally one low-poly
+  // mesh for everything else. Re-bucketed whenever the camera moves a few metres, so
+  // detail follows the player at per-instance granularity with only two draw calls.
+  class FieldInstances {
+    constructor(scene, geo, mat, opts) {
+      this.scene = scene; this.geo = geo; this.mat = mat; this.opts = opts || {};
+      this.m = []; this.c = []; this.hasColor = false;
+      this.last = new THREE.Vector3(1e9, 0, 0);
+    }
+    add(matrix, color) { this.m.push(...matrix.elements); if (color) this.hasColor = true; this.c.push(color ? color.r : 1, color ? color.g : 1, color ? color.b : 1); }
+    build() {
+      const n = this.m.length / 16;
+      this.M = new Float32Array(this.m); this.C = new Float32Array(this.c); this.m = this.c = null; this.n = n;
+      const mk = (geo, shadow) => {
+        const mesh = new THREE.InstancedMesh(geo, this.mat, Math.max(1, n));
+        mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        if (this.hasColor) mesh.setColorAt(0, new THREE.Color(1, 1, 1));
+        mesh.frustumCulled = false; mesh.castShadow = shadow; mesh.receiveShadow = true; mesh.count = 0;
+        mesh.userData.kind = (this.opts.kind || 'field') + (shadow ? '' : '-far');
+        this.scene.add(mesh);
+        return mesh;
+      };
+      this.hi = mk(this.geo, !!this.opts.castShadow);
+      this.lo = this.opts.lodGeo ? mk(this.opts.lodGeo, false) : null;
+      return [];
+    }
+    update(cam, force) {
+      if (!this.hi) return;
+      const dx0 = cam.x - this.last.x, dz0 = cam.z - this.last.z, dy0 = cam.y - this.last.y;
+      if (!force && dx0 * dx0 + dz0 * dz0 + dy0 * dy0 < 15 * 15) return;
+      this.last.copy(cam);
+      const R2 = this.opts.radius * this.opts.radius, F2 = (this.opts.farRadius || 1e9) ** 2;
+      const M = this.M, C = this.C, hm = this.hi.instanceMatrix.array, hc = this.hi.instanceColor && this.hi.instanceColor.array;
+      const lm = this.lo && this.lo.instanceMatrix.array, lc = this.lo && this.lo.instanceColor && this.lo.instanceColor.array;
+      let nh = 0, nl = 0;
+      for (let i = 0; i < this.n; i++) {
+        const dx = M[i * 16 + 12] - cam.x, dy = M[i * 16 + 13] - cam.y, dz = M[i * 16 + 14] - cam.z, d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 < R2) {
+          hm.set(M.subarray(i * 16, i * 16 + 16), nh * 16);
+          if (hc) hc.set(C.subarray(i * 3, i * 3 + 3), nh * 3);
+          nh++;
+        } else if (lm && d2 < F2) {
+          lm.set(M.subarray(i * 16, i * 16 + 16), nl * 16);
+          if (lc) lc.set(C.subarray(i * 3, i * 3 + 3), nl * 3);
+          nl++;
+        }
+      }
+      this.hi.count = nh; this.hi.instanceMatrix.needsUpdate = true; if (hc) this.hi.instanceColor.needsUpdate = true;
+      if (this.lo) { this.lo.count = nl; this.lo.instanceMatrix.needsUpdate = true; if (lc) this.lo.instanceColor.needsUpdate = true; }
+    }
+  }
+
   SR.GeoBuilder = GeoBuilder;
-  SR.geo = { colored, mergeParts, ChunkedInstances };
+  SR.geo = { colored, mergeParts, ChunkedInstances, FieldInstances };
 })();
