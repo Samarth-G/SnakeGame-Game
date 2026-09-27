@@ -190,9 +190,9 @@
     }
 
     // Is a point inside any solid box? (camera safety check)
-    pointInside(x, y, z, pad) {
+    pointInside(x, y, z, pad, mask) {
       pad = pad || 0;
-      const near = this.query(x - pad, z - pad, x + pad, z + pad, SOLID, this._tmpP || (this._tmpP = []));
+      const near = this.query(x - pad, z - pad, x + pad, z + pad, mask || SOLID, this._tmpP || (this._tmpP = []));
       for (const b of near) {
         if (x > b.x0 - pad && x < b.x1 + pad && y > b.y0 - pad && y < b.y1 + pad && z > b.z0 - pad && z < b.z1 + pad) return b;
       }

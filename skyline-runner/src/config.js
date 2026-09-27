@@ -54,6 +54,7 @@ SR.TUNING_DEFAULTS = {
   swingPivotLateral: 0.3,    // fraction of the anchor's sideways offset used by the pendulum
                              // (the web is drawn to the real anchor; the physics pivot sits
                              // closer to the travel line so side anchors don't yank you into walls)
+  swingPivotMaxLateral: 5,   // m, cap on how far the pivot may sit off the travel line
   wallRunMinInto: 0.45,      // fraction of speed that must point into a facade to start a wall run
 
   // --- Wall run ---------------------------------------------------------------

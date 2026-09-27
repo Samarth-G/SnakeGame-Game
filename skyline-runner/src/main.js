@@ -8,6 +8,7 @@
       const renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.0;
+      renderer.info.autoReset = false;
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setSize(innerWidth, innerHeight);
       container.appendChild(renderer.domElement);
@@ -25,8 +26,11 @@
 
       this.world = new SR.World(scene);
       SR.world = this.world;
+      this.textures = SR.buildTextures();
+      this.city = new SR.City(this.world, scene, this.textures);
+      this.city.build();
       this.world.finalize();
-      this.world.buildGreybox();
+      this.buildEnvironment();
 
       this.input = new SR.Input(renderer.domElement);
       this.player = new SR.Player(this.world);
@@ -49,6 +53,20 @@
         if (code === 'KeyR') this.spawn();
       };
       this.spawn();
+    }
+
+    // Temporary sky gradient + image-based lighting for reflective glass (refined in step 9).
+    buildEnvironment() {
+      const sky = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), new THREE.ShaderMaterial({
+        side: THREE.BackSide, depthWrite: false,
+        vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 top = vec3(0.25,0.45,0.8), hor = vec3(0.78,0.85,0.92), gr = vec3(0.32,0.3,0.28); vec3 c = h > 0.0 ? mix(hor, top, pow(h, 0.6)) : mix(hor, gr, pow(-h, 0.4)); gl_FragColor = vec4(c * 1.2, 1.0); }',
+      }));
+      const envScene = new THREE.Scene();
+      envScene.add(sky);
+      const pm = new THREE.PMREMGenerator(this.renderer);
+      this.scene.environment = pm.fromScene(envScene, 0.02).texture;
+      pm.dispose();
     }
 
     spawn() {
@@ -78,6 +96,9 @@
       }
       this.hand.copy(p.pos); this.hand.y += 0.8;
       this.web.update(dt, p, this.hand);
+      this.city.update(this.time);
+      SR.foliageUniforms.uCamPos.value.copy(this.camera.position);
+      SR.foliageUniforms.uHeroPos.value.set(p.pos.x, p.pos.y + 0.4, p.pos.z);
       this.debug.update(dt);
     }
 
@@ -90,6 +111,7 @@
 
     render() {
       const c = this.cam;
+      this.renderer.info.reset();
       this.post.render(this.scene, this.camera, { blur: c.speedFx, lines: c.speedFx, time: this.time });
     }
 

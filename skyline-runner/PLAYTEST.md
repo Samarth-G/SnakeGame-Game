@@ -54,3 +54,34 @@ virtual input at a fixed 60 Hz.
   strength halved. Blur still reads as slight grain in software rendering.
 - The camera drops to 1.2 m at street level and relaxes back when you speed up. Hard
   landings shake the camera.
+
+## Step 4 – Procedural buildings and districts
+- Facades are modular and procedural, with no image files. There are four archetypes
+  (brick, limestone, glass curtain wall, art-deco setbacks) plus a storefront band with
+  lit display windows and made-up shop signs. Per-building tints keep neighbours distinct.
+- Rooftops: parapets (vaultable colliders), cornices, bulkheads, water towers, HVAC,
+  skylights, solar arrays and billboard frames on residential roofs. Towers get
+  mechanical penthouses and antennas. Water towers, antennas, billboards and lamp arms
+  are perch targets.
+- Street level: sidewalks with curbs, double-yellow centre lines, lane dashes, zebra
+  crosswalks, stop lines, lane arrows, autumn street trees, lamps, signal mast arms,
+  hydrants, bins, news boxes and bike racks.
+- Park (766 × 300 m): paths, pond, stone wall and 1,900 trees. Trees over 15 m are web
+  anchors. Swinging through the park on trees alone: 3 runs, 8–9 swings each, all on
+  trees, 0 ground touches.
+- Lumen Square (red pedestrian plaza, 21 animated billboards, scrolling LED ticker,
+  ticket kiosk) and Fountain Triangle (grass triangle, fountain, radiating paths, café
+  tables) are carved out of the grid where the boulevard crosses avenues.
+- Waterfront: promenades with railings and sea wall, riverside highway with barrier,
+  piers with sheds, three suspension bridges, and a low-rise mainland skyline.
+- Regressions found and fixed:
+  - Rooftop props gave sideways anchors that dragged the swing up to 50 m off the
+    avenue. The pendulum pivot is now clamped to 5 m off the travel line
+    (`swingPivotMaxLateral`).
+  - Lumen Square left a 350 m stretch with no facades in range and caused a ground
+    touch. The clearing is narrower, and the relaxed anchor pass searches wider sideways.
+- Crossing test after the fixes: 15 runs (5 avenues × 3 release timings), 74–82 s,
+  **0 ground touches**. Anchor audit: 0 of 171 off geometry. Camera audit: 0 frames
+  inside geometry.
+- Not fixed yet: from the spire the frame is 490 draw calls and 2.9 M triangles. That is
+  for the performance pass. Foliage looks washed out until the lighting pass.

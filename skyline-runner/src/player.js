@@ -453,7 +453,9 @@
           const fd = minD + (maxD - minD) * di / 5;
           for (let ui = 0; ui < 4; ui++) {
             const up = minU + (maxU - minU) * ui / 3;
-            for (const lat of [0, 14, -14, 28, -28, T.anchorSideMax, -T.anchorSideMax]) {
+            const ls = pass === 0 ? 1 : T.anchorRelaxFactor;
+            for (const lat0 of [0, 14, -14, 28, -28, T.anchorSideMax, -T.anchorSideMax]) {
+              const lat = lat0 * ls;
               const dx = fx * fd + rx * lat, dy = up, dz = fz * fd + rz * lat;
               const len = Math.hypot(dx, dy, dz);
               const h = this.col.raycast(p.x, oy, p.z, dx / len, dy / len, dz / len, len * 1.4, C.ANCHOR, hit);
@@ -485,7 +487,7 @@
       if (!a) { this.emit('nofire'); return false; }
       this.anchor.set(a.x, a.y, a.z);
       this.anchorN.set(a.nx, a.ny, a.nz);
-      const keep = T.swingPivotLateral, shift = a.lat * (1 - keep);
+      const keepLat = U.clamp(a.lat * T.swingPivotLateral, -T.swingPivotMaxLateral, T.swingPivotMaxLateral), shift = a.lat - keepLat;
       this.pivot.set(a.x - a.rx * shift, a.y, a.z - a.rz * shift);
       this.swingSide = -a.side;
       const p = this.pos, v = this.vel;

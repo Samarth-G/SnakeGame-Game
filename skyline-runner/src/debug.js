@@ -193,7 +193,7 @@
       const h = p.findAnchor(cam);
       if (!h) { none++; continue; }
       fired++;
-      if (!col.pointInside(h.x - h.nx * 0.01, h.y - h.ny * 0.01, h.z - h.nz * 0.01, 0.02)) bad++;
+      if (!col.pointInside(h.x - h.nx * 0.01, h.y - h.ny * 0.01, h.z - h.nz * 0.01, 0.02, SR.Collision.SOLID | SR.Collision.ANCHOR)) bad++;
     }
     return { fired, noAnchor: none, anchorsNotOnGeometry: bad };
   }

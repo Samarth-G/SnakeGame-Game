@@ -67,7 +67,7 @@
     // Width of the strip kept clear of buildings along the boulevard.
     function clearHalfWidth(x, z) {
       const s = boulevardAlong(x, z);
-      if (Math.abs(s - crossEnt.s) < 170) return 50;
+      if (Math.abs(s - crossEnt.s) < 170) return 40;
       if (Math.abs(s - crossGreen.s) < 95) return 42;
       return 24;
     }
