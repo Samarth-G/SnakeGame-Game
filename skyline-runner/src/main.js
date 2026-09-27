@@ -30,6 +30,7 @@
       this.city = new SR.City(this.world, scene, this.textures);
       this.city.build();
       this.world.finalize();
+      this.traffic = new SR.Traffic(this.world, scene, this.city);
       this.buildEnvironment();
 
       this.input = new SR.Input(renderer.domElement);
@@ -97,6 +98,7 @@
       this.hand.copy(p.pos); this.hand.y += 0.8;
       this.web.update(dt, p, this.hand);
       this.city.update(this.time);
+      this.traffic.update(dt, p, this.camera.position);
       SR.foliageUniforms.uCamPos.value.copy(this.camera.position);
       SR.foliageUniforms.uHeroPos.value.set(p.pos.x, p.pos.y + 0.4, p.pos.z);
       this.debug.update(dt);

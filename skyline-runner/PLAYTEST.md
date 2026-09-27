@@ -85,3 +85,19 @@ virtual input at a fixed 60 Hz.
   inside geometry.
 - Not fixed yet: from the spire the frame is 490 draw calls and 2.9 M triangles. That is
   for the performance pass. Foliage looks washed out until the lighting pass.
+
+## Step 5 – Traffic and pedestrians
+- 4,177 vehicles (taxis, sedans, vans, box trucks, buses) on 4-lane avenues, 2-lane
+  streets and the 6-lane riverside highway. They follow lanes, keep a gap to the car
+  ahead and stop at signals. Signals run a 24 s cycle with a green wave up each avenue,
+  and the lamps on the mast arms change colour.
+- About 3,600 pedestrians walk sidewalk loops, crowd the Fountain Triangle and
+  Lumen Square, and walk park paths. Leg and arm swing runs in the vertex shader.
+- Only what is near the camera is drawn (cars within 1.1 km, pedestrians within
+  380 m). Simulating everything costs 0.63 ms per frame (headless Chromium, CPU).
+- Red-light check over 90 s of simulation: 15,376 stop-line crossings. The first version
+  ran about 10% of reds, because cars committed on yellow without being able to clear the
+  line. Cars now only continue if they clear before red: 39 of 15,376 (0.25%), all edge
+  cases at lane wrap-around.
+- Cars near the hero are dynamic colliders flagged "vault": running into one rolls you
+  over it. Cars also brake for a hero standing in their lane.
