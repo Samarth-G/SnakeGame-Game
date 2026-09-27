@@ -162,7 +162,7 @@
           g.box(s.x - rr * 2, s.y0, s.z - rr * 2, s.x + rr * 2, s.y0 + hgt * 0.35, s.z + rr * 2, steel);
           g.box(s.x - rr * 1.3, s.y0, s.z - rr * 1.3, s.x + rr * 1.3, s.y0 + hgt * 0.7, s.z + rr * 1.3, steel);
           g.box(s.x - rr * 0.7, s.y0, s.z - rr * 0.7, s.x + rr * 0.7, s.y1 - 0.25, s.z + rr * 0.7, [0.55, 0.58, 0.62]);
-          g.box(s.x - rr, s.y1 - 0.25, s.z - rr, s.x + rr, s.y1, s.z + rr, [0.75, 0.2, 0.18]);
+          g.box(s.x - rr * 0.8, s.y1 - 0.25, s.z - rr * 0.8, s.x + rr * 0.8, s.y1, s.z + rr * 0.8, [0.45, 0.12, 0.1]);
         }
 
         // Street-facing facade details: shop signs, awnings, AC units, fire escapes.

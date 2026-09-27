@@ -41,6 +41,13 @@
       this.debug = new SR.Debug(this);
 
       this.hero = new SR.Hero(scene);
+      this.hud = new SR.HUD(this.world);
+      // Small in-world highlight of where the next web would attach.
+      this.anchorMarker = new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.85, fog: false }));
+      this.anchorMarker.renderOrder = 10;
+      this.anchorMarker.visible = false;
+      scene.add(this.anchorMarker);
+      this.previewTimer = 0;
       this.flash = 0;
       this.aimMarker = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.7, 32), new THREE.MeshBasicMaterial({ color: 0xffd23c, depthTest: false, transparent: true, opacity: 0.9, fog: false }));
       this.aimMarker.renderOrder = 10;
@@ -90,6 +97,8 @@
       this.cam.update(dt, p);
       this.hero.root.visible = this.camera.position.distanceTo(p.pos) > 0.55;
       this.flash = Math.max(0, this.flash - dt * 1.5);
+      this.hud.draw(p, this.cam);
+      this.updateAnchorPreview(dt, p);
       const q = p.aimTarget;
       this.aimMarker.visible = !!q;
       if (q) {
@@ -103,6 +112,22 @@
       SR.foliageUniforms.uCamPos.value.copy(this.camera.position);
       SR.foliageUniforms.uHeroPos.value.set(p.pos.x, p.pos.y + 0.4, p.pos.z);
       this.debug.update(dt);
+    }
+
+    updateAnchorPreview(dt, p) {
+      const S = SR.Player.S, m = this.anchorMarker;
+      if (p.state === S.SWINGING || p.state === S.ZIPPING || p.aimTarget) { m.visible = false; return; }
+      this.previewTimer -= dt;
+      if (this.previewTimer <= 0) {
+        this.previewTimer = 0.08;
+        const a = p.findAnchor(this.cam);
+        m.visible = !!a;
+        if (a) m.position.set(a.x + a.nx * 0.4, a.y + a.ny * 0.4, a.z + a.nz * 0.4);
+      }
+      if (m.visible) {
+        m.rotation.y += dt * 3;
+        m.scale.setScalar(0.5 + this.camera.position.distanceTo(m.position) * 0.018);
+      }
     }
 
     onEvent(e) {

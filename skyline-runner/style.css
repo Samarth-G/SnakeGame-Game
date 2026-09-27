@@ -13,3 +13,4 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 #tuning-panel input { width: 80px; background: #111b2e; color: #fff; border: 1px solid #334; padding: 2px 4px; }
 #tuning-panel .row { display: flex; gap: 6px; margin-bottom: 8px; }
 #tuning-panel button { background: #22324f; color: #fff; border: 0; padding: 4px 8px; cursor: pointer; border-radius: 3px; }
+#hud { position: fixed; pointer-events: none; z-index: 4; }

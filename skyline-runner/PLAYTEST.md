@@ -119,3 +119,17 @@ virtual input at a fixed 60 Hz.
 - Screenshots of idle, sprint, swing, spire perch (Nocturne), hard landing and dive all
   read correctly. At full dive speed the radial blur smeared the whole frame, so its
   strength is halved again.
+
+## Step 7 – HUD
+- Bottom-right only. Minimap (180 × 130 px, bracket frame): blocks #9DB4F0, streets
+  #10205A, the park slightly lighter, the boulevard cut through the grid, and bridges.
+  The map rotates with the camera, and the gold arrow stays centred and shows facing.
+- Compass strip: a tick every 15°, N/E/S/W letters with the faced cardinal in orange,
+  and a yellow heading triangle on the left edge. A thin orange altitude bar runs down
+  the right edge (full at 520 m). Red waypoints mark points of interest and clamp to the
+  map edge when off-screen.
+- Mid-swing down an avenue the map reads at a glance. From the spire the diagonal street
+  grid shows the heading clearly.
+- Allowed world highlight: a small white diamond previews where the next web would
+  attach, and a gold ring marks the zip target while aiming. There is no crosshair or
+  health bar. The debug overlay (F3) and tuning panel (F4) are off by default.
